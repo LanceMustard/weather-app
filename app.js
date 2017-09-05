@@ -1,16 +1,32 @@
-var request = require('request');
+const yargs = require('yargs');
+const geocode = require('./geocode.js');
+const weather = require('./weather.js');
 
-var requestOptions = {
-  url: 'https://maps.googleapis.com/maps/api/geocode/json?address=1301%20lombard%20street%20philadelphia',
-  json: true
-}
+const argv = yargs
+  .options({
+    a: {
+      demand: true,
+      alias: 'address',
+      describe: 'Address to fetch weather for',
+      string: true
+    }
+  })
+  .help()
+  .alias('help', 'h')
+  .argv;
 
-const openGoogleAPI = (options) => {
-  request(options, (error, response, body) => {
-    console.log('error:', error);
-    console.log('statusCode:', response && response.statusCode);
-    console.log('body:', JSON.stringify(body, undefined, 2));
-  });
-}
-
-openGoogleAPI(requestOptions);
+geocode.geocodeAddress(argv.address, (errorMessage, results) => {
+  if (errorMessage) {
+    console.log(errorMessage);
+  } else {
+    console.log(`Checking the weather for ${results.address}`);
+    weather.forecast(results.lat, results.lng)
+      .then((result) => {
+        console.log(`Current temperature is ${result.temperature}`);
+        console.log(`Feels like ${result.apparentTemperature}`);
+      })
+      .catch((errorMessage) => {
+        console.log(errorMessage);
+      });
+  }
+});
